@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" font-family="Segoe UI,Arial,sans-serif">
+<rect width="1600" height="900" fill="#0d1117"/>
+<rect x="0" y="0" width="1600" height="8" fill="#5b3df5"/>
+<text x="80" y="118" fill="#e6edf3" font-size="54" font-weight="700">A real phone call, end to end</text>
+<text x="80" y="170" fill="#8b949e" font-size="27">Krish dials a real number from a real handset. No browser, no microphone in a room.</text>
+<g transform="translate(80,215)">
+<rect width="1440" height="120" rx="12" fill="#161b22" stroke="#3fb950" stroke-width="3"/>
+<text x="30" y="48" fill="#8b949e" font-size="23">THE PATH</text>
+<text x="30" y="95" fill="#7ee787" font-size="28" font-family="Consolas,monospace">handset  →  PSTN  →  Twilio +1 651 369 7321  →  SIP  →  LiveKit  →  agent  →  Rime /ws3</text>
+</g>
+<g transform="translate(80,365)">
+<rect width="700" height="130" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="30" y="46" fill="#8b949e" font-size="23">TWILIO NUMBER</text>
+<text x="30" y="100" fill="#79c0ff" font-size="36" font-weight="700">+1 651 369 7321</text>
+</g>
+<g transform="translate(820,365)">
+<rect width="700" height="130" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="30" y="46" fill="#8b949e" font-size="23">LIVEKIT SIP</text>
+<text x="30" y="100" fill="#79c0ff" font-size="30" font-family="Consolas,monospace">vdzb1y6s0ab.sip.livekit.cloud</text>
+</g>
+<g transform="translate(80,525)">
+<rect width="1440" height="130" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="30" y="46" fill="#8b949e" font-size="23">RIME CONFIGURATION ON THE CALL</text>
+<text x="30" y="100" fill="#e6edf3" font-size="27" font-family="Consolas,monospace">mistv3 · astra · eng · mulaw @ 8 kHz · /ws3 · segment=never · India South</text>
+</g>
+<rect x="80" y="690" width="1440" height="140" rx="12" fill="#1c2128" stroke="#5b3df5" stroke-width="3"/>
+<text x="118" y="740" fill="#e6edf3" font-size="29" font-weight="600">Volume is limited by international call cost, not by capability.</text>
+<text x="118" y="785" fill="#8b949e" font-size="26">Exotel needed a registered company. Indian numbers route into TRAI compliance.</text>
+<text x="118" y="818" fill="#8b949e" font-size="26">A US number was the only route open to an individual — so each call costs real money.</text>
+</svg>

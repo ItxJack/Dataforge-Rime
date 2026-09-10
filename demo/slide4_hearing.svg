@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" font-family="Segoe UI,Arial,sans-serif">
+<rect width="1600" height="900" fill="#0d1117"/>
+<rect x="0" y="0" width="1600" height="8" fill="#5b3df5"/>
+<text x="80" y="115" fill="#e6edf3" font-size="54" font-weight="700">The identifier problem, inbound</text>
+<text x="80" y="168" fill="#8b949e" font-size="27">Observed on a live LiveKit session — not simulated</text>
+<g transform="translate(80,215)">
+<rect width="1440" height="230" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="30" y="46" fill="#8b949e" font-size="24">SAID</text>
+<text x="500" y="46" fill="#8b949e" font-size="24">DEEPGRAM RETURNED</text>
+<text x="1080" y="46" fill="#8b949e" font-size="24">RESULT</text>
+<text x="30" y="105" fill="#e6edf3" font-size="30" font-family="Consolas,monospace">"4L80E"</text>
+<text x="500" y="105" fill="#ff7b72" font-size="30" font-family="Consolas,monospace">"4 L A T E"</text>
+<text x="1080" y="105" fill="#8b949e" font-size="26">alias lookup missed</text>
+<text x="30" y="155" fill="#e6edf3" font-size="30" font-family="Consolas,monospace">"4L80E"</text>
+<text x="500" y="155" fill="#ff7b72" font-size="30" font-family="Consolas,monospace">"4 8 o l e"</text>
+<text x="1080" y="155" fill="#8b949e" font-size="26">transposed</text>
+<text x="30" y="205" fill="#e6edf3" font-size="30" font-family="Consolas,monospace">"yes place it"</text>
+<text x="500" y="205" fill="#ff7b72" font-size="30" font-family="Consolas,monospace">"yes."  then  "place it."</text>
+<text x="1080" y="205" fill="#8b949e" font-size="26">neither half parses</text>
+</g>
+<g transform="translate(80,485)">
+<rect width="700" height="230" rx="12" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+<text x="30" y="50" fill="#7ee787" font-size="30" font-weight="600">Phonetic skeleton + similarity</text>
+<text x="30" y="100" fill="#e6edf3" font-size="25">"4 L A T E"  →  4late  →  4l8</text>
+<text x="30" y="140" fill="#e6edf3" font-size="25">matched at 0.75 confidence</text>
+<text x="30" y="190" fill="#8b949e" font-size="24">below 0.72 → ask again, never guess</text>
+</g>
+<g transform="translate(820,485)">
+<rect width="700" height="230" rx="12" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+<text x="30" y="50" fill="#7ee787" font-size="30" font-weight="600">Commands assemble across turns</text>
+<text x="30" y="100" fill="#e6edf3" font-size="25">6-second rolling window,</text>
+<text x="30" y="140" fill="#e6edf3" font-size="25">longest span first</text>
+<text x="30" y="190" fill="#8b949e" font-size="24">bare "yes" stays UNPARSED</text>
+</g>
+<text x="80" y="800" fill="#e6edf3" font-size="30" font-weight="600">A backchannel must never commit an order.</text>
+<text x="80" y="848" fill="#484f58" font-size="24">31 assertions · src/switchboard/hearing.py</text>
+</svg>

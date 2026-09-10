@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" font-family="Segoe UI,Arial,sans-serif">
+<rect width="1600" height="900" fill="#0d1117"/>
+<rect x="0" y="0" width="1600" height="8" fill="#5b3df5"/>
+<text x="80" y="120" fill="#e6edf3" font-size="54" font-weight="700">What we measured, and where it ends</text>
+<text x="80" y="175" fill="#8b949e" font-size="28">Printed by the submission itself, every run</text>
+<g transform="translate(80,235)">
+<rect width="700" height="330" rx="12" fill="#161b22" stroke="#3fb950" stroke-width="3"/>
+<text x="34" y="58" fill="#7ee787" font-size="32" font-weight="700">MEASURED</text>
+<text x="34" y="115" fill="#e6edf3" font-size="26">46–47 stale chunks fenced / barge-in</text>
+<text x="34" y="160" fill="#e6edf3" font-size="26">0 stale frames at egress boundary</text>
+<text x="34" y="205" fill="#e6edf3" font-size="26">TTFA 727–931 ms cold, 714–922 warm</text>
+<text x="34" y="250" fill="#e6edf3" font-size="26">re-entry after clear 1493–2296 ms</text>
+<text x="34" y="295" fill="#e6edf3" font-size="26">timeScaleFactor +136–147%, 5/5 runs</text>
+</g>
+<g transform="translate(820,235)">
+<rect width="700" height="330" rx="12" fill="#161b22" stroke="#8b949e" stroke-width="2"/>
+<text x="34" y="58" fill="#8b949e" font-size="32" font-weight="700">SCOPE</text>
+<text x="34" y="115" fill="#e6edf3" font-size="25">frame counts are taken at our egress</text>
+<text x="34" y="152" fill="#8b949e" font-size="25">boundary; the handset buffer is downstream</text>
+<text x="34" y="205" fill="#e6edf3" font-size="25">the TCC participant is an in-memory mock</text>
+<text x="34" y="242" fill="#8b949e" font-size="25">— the protocol is real, the backend is not</text>
+<text x="34" y="295" fill="#e6edf3" font-size="25">ASR sits upstream of the closed grammar</text>
+</g>
+<rect x="80" y="620" width="1440" height="180" rx="12" fill="#1c2128" stroke="#5b3df5" stroke-width="3"/>
+<text x="118" y="675" fill="#e6edf3" font-size="32" font-weight="600">158 tests. One command reproduces every number on this slide.</text>
+<text x="118" y="728" fill="#8b949e" font-size="28">Regression detectors fail on deliberately broken code, so a green run means something.</text>
+<text x="118" y="775" fill="#7ee787" font-size="30" font-family="Consolas,monospace">python run.py</text>
+</svg>

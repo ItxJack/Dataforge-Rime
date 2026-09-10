@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" font-family="Segoe UI,Arial,sans-serif">
+<rect width="1600" height="900" fill="#0d1117"/>
+<rect x="0" y="0" width="1600" height="8" fill="#5b3df5"/>
+<text x="80" y="115" fill="#e6edf3" font-size="54" font-weight="700">Measured on the live Rime API</text>
+<text x="80" y="168" fill="#8b949e" font-size="27">mistv3 / astra / eng · mulaw 8 kHz · /ws3 · 5 runs · India South</text>
+<g transform="translate(80,220)">
+<rect width="700" height="150" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="34" y="52" fill="#8b949e" font-size="25">STALE CHUNKS FENCED AFTER BARGE-IN</text>
+<text x="34" y="120" fill="#7ee787" font-size="62" font-weight="700">46 – 47</text>
+<text x="300" y="120" fill="#8b949e" font-size="25">per barge-in, live socket</text>
+</g>
+<g transform="translate(820,220)">
+<rect width="700" height="150" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="34" y="52" fill="#8b949e" font-size="25">STALE FRAMES AT EGRESS BOUNDARY</text>
+<text x="34" y="120" fill="#7ee787" font-size="62" font-weight="700">0</text>
+<text x="150" y="120" fill="#8b949e" font-size="25">target 0</text>
+</g>
+<g transform="translate(80,400)">
+<rect width="460" height="140" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="30" y="48" fill="#8b949e" font-size="23">TTFA COLD / WARM</text>
+<text x="30" y="108" fill="#79c0ff" font-size="40" font-weight="700">727–931 / 714–922 ms</text>
+</g>
+<g transform="translate(570,400)">
+<rect width="460" height="140" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="30" y="48" fill="#8b949e" font-size="23">RE-ENTRY AFTER clear</text>
+<text x="30" y="108" fill="#79c0ff" font-size="40" font-weight="700">1493–2296 ms</text>
+</g>
+<g transform="translate(1060,400)">
+<rect width="460" height="140" rx="12" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="30" y="48" fill="#8b949e" font-size="23">/textnorm (off speech path)</text>
+<text x="30" y="108" fill="#79c0ff" font-size="40" font-weight="700">1165–1643 ms</text>
+</g>
+<g transform="translate(80,575)">
+<rect width="700" height="140" rx="12" fill="#161b22" stroke="#3fb950" stroke-width="2"/>
+<text x="30" y="46" fill="#8b949e" font-size="23">timeScaleFactor @ 1.6</text>
+<text x="30" y="105" fill="#7ee787" font-size="38" font-weight="700">+136% to +147%  ✓ 5/5 runs</text>
+</g>
+<g transform="translate(820,575)">
+<rect width="700" height="140" rx="12" fill="#161b22" stroke="#f85149" stroke-width="2"/>
+<text x="30" y="46" fill="#8b949e" font-size="23">inlineSpeedAlpha</text>
+<text x="30" y="105" fill="#ff7b72" font-size="34" font-weight="700">0–6%, direction FLIPS — inert</text>
+</g>
+<text x="80" y="800" fill="#8b949e" font-size="27">We tested a documented capability, found it inert, and dropped the claim.</text>
+<text x="80" y="845" fill="#484f58" font-size="24">158 tests · python run.py</text>
+</svg>

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" font-family="Segoe UI,Arial,sans-serif">
+<rect width="1600" height="900" fill="#0d1117"/>
+<rect x="0" y="0" width="1600" height="8" fill="#5b3df5"/>
+<text x="80" y="130" fill="#e6edf3" font-size="58" font-weight="700">The caller cannot use a screen</text>
+<text x="80" y="200" fill="#8b949e" font-size="30">Auto-parts counter · inbound phone orders</text>
+<g transform="translate(80,280)">
+<rect width="440" height="200" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="36" y="70" fill="#58a6ff" font-size="30" font-weight="600">Hands</text>
+<text x="36" y="120" fill="#e6edf3" font-size="26">on a transmission,</text>
+<text x="36" y="158" fill="#e6edf3" font-size="26">under a lift</text>
+</g>
+<g transform="translate(580,280)">
+<rect width="440" height="200" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="36" y="70" fill="#58a6ff" font-size="30" font-weight="600">Channel</text>
+<text x="36" y="120" fill="#e6edf3" font-size="26">PSTN, 8 kHz mu-law,</text>
+<text x="36" y="158" fill="#e6edf3" font-size="26">impact wrench running</text>
+</g>
+<g transform="translate(1080,280)">
+<rect width="440" height="200" rx="14" fill="#161b22" stroke="#30363d" stroke-width="2"/>
+<text x="36" y="70" fill="#58a6ff" font-size="30" font-weight="600">Stakes</text>
+<text x="36" y="120" fill="#e6edf3" font-size="26">wrong part number</text>
+<text x="36" y="158" fill="#e6edf3" font-size="26">= wrong part ships</text>
+</g>
+<rect x="80" y="560" width="1440" height="140" rx="14" fill="#1c2128" stroke="#5b3df5" stroke-width="3"/>
+<text x="120" y="625" fill="#e6edf3" font-size="36" font-weight="600">Remove speech and there is no product —</text>
+<text x="120" y="675" fill="#8b949e" font-size="32">only a website they already cannot use.</text>
+<text x="80" y="820" fill="#484f58" font-size="24">SWITCHBOARD · Rime x DataForge</text>
+</svg>
