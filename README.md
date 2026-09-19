@@ -4,7 +4,7 @@
 gets it right when you interrupt it halfway through.**
 
 <p align="center">
-  <img src="architecture.png" alt="Switchboard architecture" width="100%">
+  <img src="architecture.jpeg" alt="Switchboard architecture" width="100%">
 </p>
 
 ---
