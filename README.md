@@ -75,7 +75,7 @@ his mind halfway through the agent's sentence.**
 ## How a call works
 
 <p align="center">
-  <img src="docs/call-flow.png" alt="Call flow" width="100%">
+  <img src="call-flow.png" alt="Call flow" width="100%">
 </p>
 
 The important property: **steps 1–4 can all be undone.** Only step 5 is
