@@ -1,261 +1,311 @@
 # Switchboard
 
-A phone-native order desk for an auto-parts distributor. The caller is a
-mechanic under a lift with dirty hands, on an 8 kHz μ-law line, with an impact
-wrench running. There is no screen. Remove speech and there is no product.
+**A parts desk you can phone. It takes your order, reads it back, and still
+gets it right when you interrupt it halfway through.**
 
-**The hard voice problem:** interruption and recovery. When the caller corrects
-a part number *while the agent is speaking it* and an ERP lookup is already in
-flight, the agent's audio must stop, superseded synthesis must not re-enter the
-turn, and the order must not be corrupted.
+<p align="center">
+  <img src="architecture.png" alt="Switchboard architecture" width="100%">
+</p>
+
+---
+
+## Executive summary
+
+Switchboard is a voice agent for an auto-parts counter, reachable on a real
+phone number, built for a caller whose hands are busy and who has no screen in
+front of him. It takes a spoken part number, places a **reversible** hold on
+stock, has Rime read the order back, and only sends the order to the warehouse
+once the caller confirms — so a correction made mid-sentence can never leave a
+wrong order behind. Rime does three distinct jobs here, not one: it tells us
+what it is **about to** say (so the order is tied to the words the caller
+actually hears rather than the text we typed), it reports what it **did** say
+word by word (so nothing is ordered that was never read aloud), and it tags
+audio with an epoch (so superseded speech is discarded at the socket rather
+than reaching the caller's ear). On live calls we measured **46 stale audio
+chunks blocked per interruption** and **zero stale frames leaking** to the
+phone line, and every number in this README is reproducible with a single
+command, `python run.py`, which runs 160 automated checks and verifies our
+Rime configuration against Rime's live voice catalog at startup.
+
+---
+
+## Demo Video
+
+A short demonstration of the process segmentation and automation pipeline:
+
+[▶️ Watch the demo video](https://drive.google.com/file/d/1N33-wHxfLZOb3HY0e0kpssBttDIFmRrr/view?usp=sharing)
+
+## Contents
+
+| | |
+|---|---|
+| [The problem](#the-problem) | who is calling, and why a screen is no help |
+| [How a call works](#how-a-call-works) | the five steps, and which one is permanent |
+| [Where Rime does the work](#where-rime-does-the-work) | the three jobs, with a worked example |
+| [The hard part](#the-hard-part-interruption) | interruption, and what happens in the first 20 ms |
+| [When it mishears](#when-it-mishears) | real ASR failures and how we handle them |
+| [Results](#results) | what we measured, on live calls |
+| [Run it yourself](#run-it-yourself) | setup, in order |
+| [Repository map](#repository-map) | what each file does |
+| [Scope](#scope) | what we have *not* proved |
+
+---
+
+## The problem
+
+A mechanic phones a parts counter. His hands are on a transmission, the phone
+is on speaker across the bay, and an impact wrench is running. He orders by
+part number.
 
 ```
-Agent:  "reading that back, three of 4L60E, total four twelve..."
-Caller: "No — 4L80E."
-        → local mute inside one frame, no Rime round-trip
-        → superseded synthesis fenced at the socket
-        → order stays RESERVED; correction absorbed; version bumps
-        → new readback → authorization → version-fenced Confirm
+4L80E      ← transmission A
+4L60E      ← transmission B
 ```
 
-## Quick start
+One character apart. Wrong number, wrong part ships, and somebody drives back
+across town. There is no screen in this job, which is the whole reason it is a
+phone call — remove speech and there is no product, only a website he already
+cannot use.
 
-```
+**The hard bit is not understanding him. It is what happens when he changes
+his mind halfway through the agent's sentence.**
+
+---
+
+## How a call works
+
+<p align="center">
+  <img src="docs/call-flow.png" alt="Call flow" width="100%">
+</p>
+
+The important property: **steps 1–4 can all be undone.** Only step 5 is
+permanent, and it is held in escrow for 500 ms so that a barge-in arriving a
+moment later still aborts it before the request leaves the network card.
+
+---
+
+## Where Rime does the work
+
+Rime is not a text-to-speech pipe bolted onto the end. It is load-bearing in
+three places, and removing it would break two of them outright.
+
+### 1. It tells us what it is *about* to say
+
+This is the part most people do not expect. What we write is **not** what the
+caller hears:
+
+| | |
+|---|---|
+| **We send Rime** | `3 of spell(4L80E). Total $412.59.` |
+| **Rime speaks** | `three of four, L, eight zero, E. Total four hundred twelve dollars fifty nine cents.` |
+
+Nothing we typed survives to the ear. So before speaking, we ask Rime's
+`/textnorm` endpoint what it is going to say, and we tie the order's
+authorization to **that** string — the words the caller will actually hear.
+
+Binding the order to the text we wrote would be binding it to something nobody
+ever heard.
+
+> Called at transaction-mutation time and cached, never on the speech path, so
+> it costs nothing in response latency.
+
+### 2. It reports what it *did* say
+
+Rime's `/ws3` WebSocket returns word-level timestamps as it speaks. We record
+them, and the order will not go through unless those words include the part
+number and the total.
+
+**No readback, no order.** If synthesis was cut off before the price was
+spoken, authorization is refused.
+
+### 3. It lets us cut it off cleanly
+
+Every chunk of audio carries a `contextId` naming the conversational turn it
+belongs to. When the caller interrupts, we advance the turn counter, and any
+chunk still arriving from the old turn is discarded at the socket — before it
+can reach the playout buffer.
+
+---
+
+## The hard part: interruption
+
+The caller says *"wait — change that"* while the agent is mid-sentence and a
+reservation is already open. Four things have to happen, in this order:
+
+| When | What |
+|---|---|
+| **within 20 ms** | Audio to the caller mutes. A short fade on decoded audio, re-encoded — so the stream never actually gaps. |
+| **same instant** | The turn counter advances. Every in-flight chunk is now stale by definition. |
+| **asynchronously** | Rime is told to stop. **The mute never waits for this round trip.** |
+| **within 500 ms** | If an order was about to be placed, the escrow aborts it before dispatch. |
+
+The design rule underneath all of it: **correctness never depends on a network
+message arriving in time.** The mute is local and immediate; the remote
+cancellation is an optimisation.
+
+---
+
+## When it mishears
+
+Speech recognition on a phone line gets identifiers wrong in ways an alias
+table cannot cover. These are real transcripts from our own calls:
+
+| He said | The computer heard | Why |
+|---|---|---|
+| `4L80E` | `4 L A T E` | "eighty" written as the word *ate* |
+| `4L80E` | `4 8 o l e` | letters and digits transposed |
+| `yes place it` | `"yes."` then `"place it."` | he paused; neither half is a command |
+
+Our approach:
+
+- **Match on sound, not spelling.** A part number is reduced to a phonetic
+  skeleton and compared by similarity. `4 L A T E` resolves to `4L80E`.
+- **Ask rather than guess.** Below a confidence floor the agent asks again.
+  Ordering the wrong part because a match was *close enough* is worse than one
+  extra turn.
+- **Stitch sentences back together.** A six-second rolling window joins
+  fragments, so a pause mid-command does not lose the command. The window is
+  deliberately short, so a stale *"yes"* cannot pair with a much later
+  *"place it"*.
+- **A bare "yes" never places an order.** It is an acknowledgement, not an
+  authorization. A backchannel must not commit money.
+
+---
+
+## Results
+
+Measured on live calls and against the live Rime API, `mistv3` / `astra` /
+`eng`, G.711 mu-law at 8 kHz, five runs.
+
+| | |
+|---|---|
+| **Stale audio chunks blocked per interruption** | **46 – 47** |
+| **Stale frames leaked to the phone line** | **0** |
+| Time to first sound (cold / warm) | 0.73 – 0.93 s / 0.71 – 0.92 s |
+| Time to recover after an interruption | 1.5 – 2.3 s |
+| `/textnorm` latency (off the speech path) | 1.2 – 1.6 s |
+| Automated checks | 160 passing |
+
+Cold and warm starts are reported separately rather than averaged together.
+
+**On speed control:** Rime offers two. We tested both on live calls.
+`timeScaleFactor` changed duration by +136 % to +147 % at 1.6, in the same
+direction on every run. `inlineSpeedAlpha` moved it by under 6 % with the
+direction flipping between runs — that is measurement noise, not control, so
+we ship the first and do not claim the second.
+
+---
+
+## Run it yourself
+
+### 1. Install
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+### 2. Check everything, no API key needed
+
+```bash
 python run.py
 ```
 
-That is the whole thing. `python run.py` checks the environment, runs the
-acceptance suite, runs the adversarial races, runs the Rime preflight, runs the
-stress demonstration, and prints a rubric-by-rubric report — with a PASS/FAIL
-line per stage and an explicit list of what is **not** measured.
+Six stages: environment, 160 tests, adversarial race conditions, the Rime
+preflight, the interruption stress case, and a report against the judging
+rubric. This works fully offline.
 
-No `make` needed. Works on Windows. Works from a clean checkout with no install
-beyond `pytest`, and no `PYTHONPATH`.
+### 3. Add a Rime key and hit the live API
 
-| Command | What it does |
-|---|---|
-| `python run.py` | everything, in order, with a PASS/FAIL report |
-| `python run.py test` | acceptance suite only |
-| `python run.py chaos` | adversarial races only (TCC + interruption) |
-| `python run.py preflight` | blocking eligibility checks |
-| `python run.py demo` | the 90-second stress case |
-| `python run.py live` | preflight against the **real** Rime API |
-
-`make` targets exist as a convenience and mirror these exactly; they are not
-required.
-
-### Going live
-
-```
-cp .env.example .env        # add RIME_API_KEY
-pip install -r requirements.txt
+```bash
+cp .env.example .env             # then paste your key into RIME_API_KEY
 python run.py live
 ```
 
-`live` runs three gated steps: the catalog and HTTP endpoints, then a **real
-`/ws3` WebSocket** (connect, speak, assert `chunk`/`timestamps`/`done`, measure
-cold and warm TTFA, verify `clear` does not stall the next flush), then the
-judge report against the live API. Each step gates the next — a bad speaker
-makes the socket test meaningless.
+Opens a real WebSocket to Rime, measures time-to-first-audio cold and warm,
+confirms word timestamps arrive, and verifies the speaker exists in Rime's
+live catalog.
 
-It also writes two WAVs to `fixtures/live/` at `inlineSpeedAlpha` 1.60 and 0.60.
-**Listen to both.** The docs say `>1.0` is slower for `inlineSpeedAlpha`, but
-`speedAlpha` inverts on Mist v3 and nothing states whether inline follows. The
-identifier slowing depends on it. The longer file is the slower alpha; record
-the finding in `RIME_EVIDENCE.md`.
+### 4. Other commands
 
-### Far-end acoustic residue
-
-The one number no application-layer probe can produce. Every other measurement
-here sits upstream of the kernel buffer, the carrier and the handset jitter
-buffer.
-
-```
-python run.py acoustic call.wav reference.wav
-```
-
-**Procedure.** Place a real call. Record the caller's handset earpiece with a
-second phone. Barge in mid-utterance. Commit both the recording and the
-reference PCM that Rime synthesised for the interrupted utterance.
-
-**Method.** Matched filter. The recording mixes agent and caller in one
-channel, so energy thresholding cannot separate them -- but we know exactly
-what the agent said. Cross-correlate to align, fit the earpiece gain on the
-agent-only lead-in, subtract to isolate the caller (that gives T0), then
-project each frame of the recording onto the reference to find when the agent
-actually stopped (T3). Residue = T3 - T0.
-
-**Validated against known answers.** Thirteen synthetic calls with the residue
-built in by construction, across quiet and loud handsets, two noise levels, a
-caller near the agent's pitch, and multiple seeds. All recover within one
-projection frame (30 ms), which is the quantisation the tool reports.
-
-**It refuses rather than guessing.** If agent-on and agent-off levels are not
-separable, or no barge-in is found, it reports an error instead of a plausible
-number. A tool that always returns something invites fabricated evidence.
-
-**Requires** `pip install numpy`. Not needed for anything else.
-
-### Telephony
-
-`src/switchboard/agent.py` is the LiveKit + SIP entrypoint. It is the **one
-module that cannot be verified offline** — it needs a trunk, a number and a
-key. Everything it wires together is tested; the wiring is not. That is stated
-in the module rather than implied, because the rest of the evidence would be
-worth less otherwise.
-
-Everything except `live` runs offline against a transport that reproduces
-`/ws3`'s documented behaviour — including the parts that bite: a chunk carries
-the `contextId` active when audio was *requested*; `clear` discards the buffer
-but does not abort in-flight synthesis; `eos` can close without a `done`.
-
-## Architecture
-
-```
- caller ──PSTN──► VAD / STT
-                     │
-              TURN CONTROLLER          overlap_id, speech epoch
-                     │                 Bayes risk, arousal gated by voicing
-                     ▼
-            CANONICAL TRANSACTION FSM  ◄── the ONLY authority
-             tx_id · version · digest
-                     │
-              deterministic renderer   emits text AND span offsets
-                     │
-     ┌───────────────┴────────────────┐
-     │  /textnorm  (mutation-time)    │  ← spoken-form digest
-     │  /ws3       (speech-time)      │  ← audio + word timestamps + contextId
-     │  spell() · inline_speed_alpha  │  ← identifier delivery
-     └───────────────┬────────────────┘
-                     ▼
-             EGRESS CONTROLLER         ledger · epoch fence · fade
-                     │                 mute = write muted frames, never stop
-        ┌────────────┴────────────┐
-        ▼                         ▼
-   frame probe              PSTN handset ──► far-end acoustic measurement
-```
-
-Transaction lifecycle is TCC: **Try** creates only the declared reservation
-effects — an ATP decrement and a reservation record, and **no fulfilment or
-irreversible downstream action begins before Confirm**. The conversation mutates
-the reservation freely. **Confirm** is the single irreversible moment: atomic,
-version-fenced against the participant's own version, and scoped to the
-transaction that owns the reservation.
-
-## The one non-negotiable rule
-
-> **LiveKit and Rime events may never directly mutate transaction state.**
-
-```
-Rime "done"          → synthesis finished. NOT "the caller heard it."
-LiveKit "interrupted"→ a framework event. NOT "cancel the order."
-```
-
-Framework events are validated by the turn controller; only the canonical FSM
-decides anything. LiveKit has live 2026 races — stale replies starting after a
-new user turn, speech handles wedged after tool interruption, interruption
-results applied to the wrong overlap, tool results lost across interruption. If
-the framework's speech lifecycle is your transaction authority, those races
-become order corruption. Keeping the FSM outside is what makes them merely
-annoying.
-
-## Failure behaviour
-
-| Condition | Behaviour |
+| Command | What it does |
 |---|---|
-| `/textnorm` unavailable | Fail closed — action loses the light path, escalates |
-| Spoken form stale vs transaction | Authorization refused |
-| Commitment words never emitted by Rime | Authorization refused (causality only) |
-| Transaction mutates after "yes" | Token invalidated; re-read and re-authorize |
-| Reservation expired before Confirm | Reject. Never silently recreate |
-| Warehouse picks between auth and commit | Version conflict; Confirm refused |
-| Utterance outside the closed grammar | `UNPARSED` → ask again, never commit |
-| Repeated false yields on the readback | Escalating desensitisation; first resume silent |
-| Rime socket closes without `done` | Terminal; socket drained, never promoted |
-| Barge-in within 500 ms of "yes" | Confirm never dispatched; escrow aborts |
-| Barge-in after Confirm dispatched | Cancel issued; participant tombstone makes ordering irrelevant |
-| Confirm response lost (timeout) | Query-then-reconcile. Never a blind retry |
-| Model lacks `inline_speed_alpha` | Control stripped per model, not sent and 400'd |
+| `python run.py test` | the full test suite |
+| `python run.py chaos` | transaction and interruption race conditions only |
+| `python run.py demo` | the 90-second interruption stress case |
+| `python run.py speed` | the two speed controls, measured side by side |
+| `python run.py preflight` | live catalog check and secret scan |
+| `python -m switchboard.agent dev` | start the phone agent |
 
-## What is deliberately not claimed
+### 5. Take a real call
 
-The system does not know what the caller heard, and cannot. Two receiver states
-— played, or sitting in the handset's jitter buffer — are indistinguishable
-from anything we can observe. What it establishes is that the authorization
-refers to the spoken form **produced and timestamped by the configured Rime
-pipeline**, and that superseded audio does not re-enter the turn.
+Needs a LiveKit account and a phone number routed to it. Fill `LIVEKIT_*` in
+`.env`, start the agent, and dial the number.
 
-The frame count is a local-egress number. Packets handed to the kernel cannot
-be recalled. The user-visible number is the far-end acoustic measurement.
+---
 
-## Layout
+## Repository map
 
 ```
+run.py                     one command, six stages
 src/switchboard/
-  rime.py     /ws3 client, epoch fence, one clause in generation,
-              /textnorm + /oov + /voices, spell(), inline_speed_alpha
-  render.py   transaction → spans → text → /textnorm → spoken digest (cached)
-  egress.py   playout ledger, muted-frame writer, raised-cosine fade, probe
-  turn.py     overlap_id binding, Bayes-risk interruption, damping
-  auth.py     closed grammar, single-use session+snapshot-bound token
-  commit.py   500ms escrow closing the in-flight-Confirm race
-  ulaw.py     pure-python G.711 (audioop is gone in Python 3.13)
-  tcc.py      participant FSM: idempotence, anti-suspension, expiry, fencing
+  agent.py                 LiveKit entry point — the phone leg
+  rime.py                  our Rime client: /ws3, /textnorm, /oov, catalog
+  render.py                builds the readback and its normalised form
+  hearing.py               phonetic matching, multi-turn commands
+  turn.py                  barge-in decision, epoch advance
+  egress.py                audio out, mute, fade, leak probe
+  auth.py                  closed grammar, single-use token
+  tcc.py                   reservation: try / confirm / cancel
+  commit.py                500 ms escrow, reconciliation
+  ulaw.py                  G.711 codec (Python 3.13 removed the stdlib one)
 eval/
-  judge.py      the one-command rubric walkthrough
-  demo.py       the 90-second stress case
-  preflight.py  blocking eligibility checks (--live for the real API)
+  judge.py                 rubric-by-rubric report
+  live.py                  real /ws3 smoke test
+  speed.py                 controlled speed-control experiment
+  acoustic.py              far-end residue measurement
+  demo.py / preflight.py   stress case, eligibility checks
+tests/                     160 assertions
+docs/                      the diagrams in this README
 ```
 
-## Scope boundaries
+**Third-party services:** Rime (speech out), LiveKit Agents (orchestration and
+SIP), Deepgram nova-3 (speech in), Twilio (phone number). No LLM anywhere in
+the path that places an order.
 
-One active consequential transaction at a time; a second triggers explicit
-serialization. Synthetic catalog and accounts throughout. Deliberate relay of a
-challenge by a cooperating third party is out of the threat model — the caller
-is placing their own order and has no incentive. See `RIME_EVIDENCE.md` for the
-full list of what was cut and why.
+---
 
+## Scope
 
-## Verified Rime API contracts
+Stated here and printed by the tool on every run, so nobody has to go looking.
 
-Every one of these was wrong in an earlier revision, passed its mock, and would
-have failed on first contact with the live API. Each now has a regression test
-and the fake asserts the contract.
+- **Frame counts are measured where our system hands audio to the phone line.**
+  The caller's own handset buffer is downstream of that point. We built and
+  validated a tool to measure the far end (`python run.py acoustic`, checked
+  against 13 synthetic calls with known answers), but running it at scale needs
+  many paid international calls.
+- **The warehouse is a stand-in.** The ordering protocol is real and tested;
+  the inventory system behind it is in-memory with a synthetic catalog.
+- **Speech recognition sits upstream of our grammar,** so its error rate bounds
+  ours. That is why low-confidence matches ask again instead of guessing.
+- **Call volume is limited by cost, not capability.** Indian numbers require
+  company registration and regulatory KYC, so we used a US number — every test
+  call is an international call paid out of pocket.
 
-| Surface | Contract |
+### Failure behaviour
+
+| If this fails | The agent |
 |---|---|
-| Text normalization | `POST https://optimize.rime.ai/textnorm` → `{"normalized": ...}` |
-| Voice catalog | `GET https://users.rime.ai/data/voices/all-v2.json` — **public, no auth**, keyed `{modelId: {lang: [speakers]}}` |
-| Streaming | `wss://users-ws.rime.ai/ws3?speaker=&modelId=&lang=&audioFormat=&samplingRate=&segment=`, key in the `Authorization` header |
-| Flush | `{"operation":"flush"}` — a bare operation; `contextId` rides on the **text** message |
-| Per-span speed | `inlineSpeedAlpha` applies **only to `[square brackets]`**, one value per bracketed span, in order |
-| Bracket types | `[square]` speed · `{curly}` phonemes · `<angle>` pauses — three different controls |
-| Model capability | `inlineSpeedAlpha` and `phonemizeBetweenBrackets` are Mist-family; Coda/Arcana reject them, so controls are stripped per model |
-| Speed matrix | `inlineSpeedAlpha` (selected words): **Mist v2 + Mist v3**, `<1.0` faster. `timeScaleFactor` (whole response): **Coda + Mist v3**, `>1.0` slower. `speedAlpha` on Coda/Mist v3 runs the **opposite** way. Directions are per-parameter and must not be inferred across them. |
-| Bracket binding | `inlineSpeedAlpha` applies to **words in `[square brackets]`**, one value per bracketed span. Rime's own example brackets single plain words: `"This sentence is [really] [fast]"`. |
+| Rime `/textnorm` unreachable | refuses to read back, places nothing |
+| Word timestamps missing | refuses authorization — never assumes it spoke |
+| Confirm times out | queries state and reconciles; never blind-retries |
+| Part number unclear | asks again rather than guessing |
+| Caller interrupts during commit | aborts before dispatch, releases the hold |
 
-### Speed control: a worked example of getting this wrong
+---
 
-`python run.py speed` exists because an earlier revision drew a conclusion its
-experiment could not support. Two renders at `inlineSpeedAlpha` 1.60 and 0.60
-differed by 60 ms on an 8.2 s utterance, and that was read as "Mist v3 ignores
-the parameter". It confounded three separate questions:
+## Evidence
 
-1. is the parameter reaching the model?
-2. is the **bracket markup** valid?
-3. does the model honour it?
-
-Rime's documented example brackets single plain words — `"This sentence is
-[really] [fast]"`. The markup under test bracketed `[spell(4L80E)]` (a function
-call) and `[$412.59]` (a token that normalises to six words). Either binds
-nothing while the parameter works perfectly.
-
-Worse, the wrong conclusion was then written into the capability table, which
-made `supports_inline_speed()` return False, which stripped the brackets — and
-disabled the very probe that would have investigated. **A single negative
-result must not narrow a capability when the experiment itself is suspect.**
-
-The diagnostic now runs a matrix — Rime's own example with and without the
-parameter, our markup with and without, and `timeScaleFactor` as a control —
-so a null result names its own cause.
+`RIME_EVIDENCE.md` holds the hard voice claim, the acceptance test defined
+before the demo, the procedure, the measured results, and the limitations.
