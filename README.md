@@ -1,4 +1,4 @@
-# Switchboard - Team : Algo Alchemy
+# Switchboard (Team : Algo Alchemy)
 
 **A parts desk you can phone. It takes your order, reads it back, and still
 gets it right when you interrupt it halfway through.**
