@@ -1,4 +1,4 @@
-# Switchboard
+# Switchboard - Team : Algo Alchemy
 
 **A parts desk you can phone. It takes your order, reads it back, and still
 gets it right when you interrupt it halfway through.**
@@ -11,21 +11,7 @@ gets it right when you interrupt it halfway through.**
 
 ## Executive summary
 
-Switchboard is a voice agent for an auto-parts counter, reachable on a real
-phone number, built for a caller whose hands are busy and who has no screen in
-front of him. It takes a spoken part number, places a **reversible** hold on
-stock, has Rime read the order back, and only sends the order to the warehouse
-once the caller confirms — so a correction made mid-sentence can never leave a
-wrong order behind. Rime does three distinct jobs here, not one: it tells us
-what it is **about to** say (so the order is tied to the words the caller
-actually hears rather than the text we typed), it reports what it **did** say
-word by word (so nothing is ordered that was never read aloud), and it tags
-audio with an epoch (so superseded speech is discarded at the socket rather
-than reaching the caller's ear). On live calls we measured **46 stale audio
-chunks blocked per interruption** and **zero stale frames leaking** to the
-phone line, and every number in this README is reproducible with a single
-command, `python run.py`, which runs 160 automated checks and verifies our
-Rime configuration against Rime's live voice catalog at startup.
+Switchboard is a voice agent for an auto-parts counter, reachable on a real phone number for callers with no screen. It takes a spoken part number, places a reversible stock hold, has Rime read the order back, and releases it to the warehouse only after confirmation. Rime provides the spoken-form binding, word-level synthesis evidence, and audio epoch fencing needed to prevent superseded speech from authorizing an order. In live calls, we measured 46 stale audio chunks blocked per interruption and zero stale frames passing our egress gate. The full pipeline is reproducible with python run.py, which runs 160 automated checks and verifies the live Rime voice configuration.
 
 ---
 
